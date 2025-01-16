@@ -20,6 +20,7 @@
         #reader {
             width: 300px;
             margin: 20px auto;
+            display: none; /* 初期は非表示 */
         }
         #result {
             margin-top: 20px;
@@ -41,9 +42,11 @@
 </head>
 <body>
     <h1>少額決済読み取り</h1>
+    <button id="start-scan">QR コードをスキャン</button>
     <div id="reader"></div>
     <div id="result"></div>
     <div id="status"></div>
+
     <script>
         const messages = {
             scanning: "スキャン中...",
@@ -99,57 +102,74 @@
             }
         }
 
-        // QRコードスキャナーの初期化
-        const html5QrCode = new Html5Qrcode("reader");
+        // スキャナーの起動と停止を管理
+        document.getElementById("start-scan").addEventListener("click", () => {
+            const readerElement = document.getElementById("reader");
+            const scanButton = document.getElementById("start-scan");
 
-        html5QrCode.start(
-            { facingMode: "environment" }, // 背面カメラを使用
-            {
-                fps: 10, // 毎秒10フレームのスキャン
-                qrbox: 250, // QRコードのスキャンエリア
-            },
-            async (decodedText) => {
-                try {
-                    const decodedData = base64ToUtf8(decodedText);
-                    const result = JSON.parse(decodedData);
+            // スキャナーを表示してボタンを非表示
+            readerElement.style.display = "block";
+            scanButton.style.display = "none";
 
-                    const currentTimestamp = Date.now();
-                    if (currentTimestamp > result.timestamp + 300000) { // 5分の有効期限チェック
-                        showMessage(messages.expired);
-                    } else {
-                        const displayMessage = 
-                            `スキャン結果:\n` +
-                            `名前: ${result.userName}\n` +
-                            `ID: ${result.userId}\n` +
-                            `金額: ¥${result.amount}\n` +
-                            `時間: ${new Date(result.timestamp).toLocaleString()}`;
-                        showMessage(displayMessage);
+            const html5QrCode = new Html5Qrcode("reader");
 
-                        // コールバックに送信するデータを作成
-                        const callbackData = {
-                            "支払い元の名前": result.userName,
-                            "支払い元のID": result.userId,
-                            "スキャンした人の名前": hardcodedName,
-                            "スキャンした人のID": hardcodedUserId,
-                            "支払い金額": result.amount,
-                            "支払い日時": new Date(result.timestamp).toISOString(),
-                        };
+            html5QrCode.start(
+                { facingMode: "environment" }, // 背面カメラを使用
+                {
+                    fps: 10, // 毎秒10フレームのスキャン
+                    qrbox: 250, // QRコードのスキャンエリア
+                },
+                async (decodedText) => {
+                    try {
+                        const decodedData = base64ToUtf8(decodedText);
+                        const result = JSON.parse(decodedData);
 
-                        // データをコールバックURLに送信
-                        await sendToCallback(callbackData);
+                        const currentTimestamp = Date.now();
+                        if (currentTimestamp > result.timestamp + 300000) { // 5分の有効期限チェック
+                            showMessage(messages.expired);
+                        } else {
+                            const displayMessage = 
+                                `スキャン結果:\n` +
+                                `名前: ${result.userName}\n` +
+                                `ID: ${result.userId}\n` +
+                                `金額: ¥${result.amount}\n` +
+                                `時間: ${new Date(result.timestamp).toLocaleString()}`;
+                            showMessage(displayMessage);
+
+                            // コールバックに送信するデータを作成
+                            const callbackData = {
+                                "支払い元の名前": result.userName,
+                                "支払い元のID": result.userId,
+                                "スキャンした人の名前": hardcodedName,
+                                "スキャンした人のID": hardcodedUserId,
+                                "支払い金額": result.amount,
+                                "支払い日時": new Date(result.timestamp).toISOString(),
+                            };
+
+                            // データをコールバックURLに送信
+                            await sendToCallback(callbackData);
+                        }
+                    } catch (error) {
+                        console.error("エラー:", error);
+                        showMessage(messages.invalid);
+                    } finally {
+                        // スキャナー停止と非表示
+                        html5QrCode.stop().then(() => {
+                            readerElement.style.display = "none"; // スキャナー非表示
+                            scanButton.style.display = "block"; // ボタンを再表示
+                        }).catch(err => {
+                            console.error("スキャナー停止エラー:", err);
+                        });
                     }
-                } catch (error) {
-                    console.error("エラー:", error);
-                    showMessage(messages.invalid);
+                },
+                (errorMessage) => {
+                    showStatus(messages.scanError, false);
+                    console.error("スキャンエラー:", errorMessage);
                 }
-            },
-            (errorMessage) => {
-                showStatus(messages.scanError, false);
-                console.error("スキャンエラー:", errorMessage);
-            }
-        ).catch(error => {
-            console.error("QRコードスキャナー初期化エラー:", error);
-            showMessage("QRコードスキャナーの初期化に失敗しました。");
+            ).catch(error => {
+                console.error("QRコードスキャナー初期化エラー:", error);
+                showMessage("QRコードスキャナーの初期化に失敗しました。");
+            });
         });
     </script>
 </body>
