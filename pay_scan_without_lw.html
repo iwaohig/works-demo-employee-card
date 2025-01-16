@@ -79,19 +79,33 @@
             statusElement.className = isSuccess ? "success-message" : "error-message";
         }
 
-        // 表示をクリアする関数
-        function clearDisplay() {
-            document.getElementById("result").textContent = "";
-            document.getElementById("status").textContent = "";
+        // データをコールバックURLに送信する関数
+        async function sendToCallback(data) {
+            try {
+                const response = await fetch(callbackUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(data),
+                });
+                if (response.ok) {
+                    showStatus(messages.sendSuccess, true);
+                    console.log("送信成功:", data);
+                } else {
+                    showStatus(messages.sendError, false);
+                    console.error("送信エラー:", await response.text());
+                }
+            } catch (error) {
+                showStatus(messages.sendError, false);
+                console.error("送信中のエラー:", error);
+            }
         }
 
         // スキャナーの起動と停止を管理
         document.getElementById("start-scan").addEventListener("click", () => {
             const readerElement = document.getElementById("reader");
             const scanButton = document.getElementById("start-scan");
-
-            // 前回の結果をクリア
-            clearDisplay();
 
             // スキャナーを表示してボタンを非表示
             readerElement.style.display = "block";
@@ -118,11 +132,11 @@
                             showMessage(messages.expired);
                         } else {
                             const displayMessage = 
-                                `スキャン結果:\n` +
-                                `名前: ${result.userName}\n` +
-                                `ID: ${result.userId}\n` +
-                                `金額: ¥${result.amount}\n` +
-                                `時間: ${new Date(result.timestamp).toLocaleString()}`;
+                                スキャン結果:\n +
+                                名前: ${result.userName}\n +
+                                ID: ${result.userId}\n +
+                                金額: ¥${result.amount}\n +
+                                時間: ${new Date(result.timestamp).toLocaleString()};
                             showMessage(displayMessage);
 
                             // コールバックに送信するデータを作成
