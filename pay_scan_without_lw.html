@@ -110,8 +110,15 @@
                 },
                 async (decodedText) => {
                     try {
+                        console.log("スキャンされたデータ:", decodedText);
+
+                        // Base64デコード
                         const decodedData = base64ToUtf8(decodedText);
+                        console.log("デコードされたデータ:", decodedData);
+
+                        // JSON解析
                         const result = JSON.parse(decodedData);
+                        console.log("解析されたJSON:", result);
 
                         const currentTimestamp = Date.now();
                         if (currentTimestamp > result.timestamp + 300000) { // 5分の有効期限チェック
