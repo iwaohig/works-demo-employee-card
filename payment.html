@@ -33,6 +33,11 @@
         #qrcode {
             margin-top: 20px;
         }
+        #countdown {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            color: #d9534f;
+        }
     </style>
 </head>
 <body>
@@ -45,16 +50,36 @@
     </div>
 
     <div id="qrcode"></div>
+    <div id="countdown"></div>
 
     <script>
         function utf8ToBase64(str) {
             return btoa(unescape(encodeURIComponent(str)));
         }
 
+        function startCountdown(expiryTimestamp) {
+            const countdownElement = document.getElementById("countdown");
+            const interval = setInterval(() => {
+                const currentTimestamp = Date.now();
+                const timeLeft = expiryTimestamp - currentTimestamp;
+
+                if (timeLeft <= 0) {
+                    clearInterval(interval);
+                    countdownElement.textContent = "QRコードの有効期限が切れました。";
+                    countdownElement.style.color = "red";
+                } else {
+                    const minutes = Math.floor(timeLeft / 60000);
+                    const seconds = Math.floor((timeLeft % 60000) / 1000);
+                    countdownElement.textContent = `有効期限: 残り ${minutes}分 ${seconds}秒`;
+                }
+            }, 1000);
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             const generateButton = document.getElementById("generate");
             const amountInput = document.getElementById("amount");
             const qrcodeContainer = document.getElementById("qrcode");
+            const countdownElement = document.getElementById("countdown");
 
             let userName = "";
             let userId = "";
@@ -81,11 +106,13 @@
                 }
 
                 const timestamp = Date.now();
+                const expiryTimestamp = timestamp + 5 * 60 * 1000; // 5分後のタイムスタンプ
                 const qrPayload = {
                     userName,
                     userId,
                     amount,
                     timestamp,
+                    expiry: expiryTimestamp,
                 };
                 const qrData = utf8ToBase64(JSON.stringify(qrPayload));
 
@@ -99,6 +126,10 @@
                 });
 
                 console.log("生成されたQRコードのデータ:", qrPayload);
+
+                // カウントダウン開始
+                countdownElement.style.color = "#d9534f"; // 初期色を設定
+                startCountdown(expiryTimestamp);
             });
         });
     </script>
