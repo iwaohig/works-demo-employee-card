@@ -98,12 +98,10 @@
 
                         // コールバックに送信するデータを作成
                         const callbackData = {
-                            名前: result.displayName,
-                            ID: result.userId,
-                            読み取った人: {
-                                名前: scannerName,
-                                ID: scannerUserId
-                            },
+                            "社員証の名前": result.displayName,
+                            "社員証のID": result.userId,
+                            "スキャンした人の名前": scannerName,
+                            "スキャンした人のID": scannerUserId,
                         };
 
                         // データをコールバックURLに送信
