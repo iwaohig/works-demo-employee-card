@@ -22,11 +22,22 @@
             font-size: 18px;
             color: #333;
         }
+        .success-message {
+            color: green;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        .error-message {
+            color: red;
+            font-size: 16px;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <button id="scan">QR コードをスキャン</button>
     <div id="result"></div>
+    <div id="status"></div>
     <script>
         const messages = {
             scanning: "スキャン中...",
@@ -51,6 +62,13 @@
             document.getElementById("result").textContent = message;
         }
 
+        // ステータスを表示する関数
+        function showStatus(message, isSuccess = true) {
+            const statusElement = document.getElementById("status");
+            statusElement.textContent = message;
+            statusElement.className = isSuccess ? "success-message" : "error-message";
+        }
+
         // データをコールバックURLに送信する関数
         async function sendToCallback(data) {
             try {
@@ -62,14 +80,14 @@
                     body: JSON.stringify(data),
                 });
                 if (response.ok) {
-                    showMessage(messages.sendSuccess);
+                    showStatus(messages.sendSuccess, true);
                     console.log("送信成功:", data);
                 } else {
-                    showMessage(messages.sendError);
+                    showStatus(messages.sendError, false);
                     console.error("送信エラー:", await response.text());
                 }
             } catch (error) {
-                showMessage(messages.sendError);
+                showStatus(messages.sendError, false);
                 console.error("送信中のエラー:", error);
             }
         }
@@ -94,9 +112,8 @@
                     if (currentTimestamp > result.timestamp + 300000) { // 5分の有効期限チェック
                         showMessage(messages.expired);
                     } else {
-                        showMessage(
-                            `スキャン結果: 名前 ${result.userName}, ID ${result.userId}, 金額 ¥${result.amount}, 時間 ${new Date(result.timestamp).toLocaleString()}`
-                        );
+                        const displayMessage = `スキャン結果: 名前 ${result.userName}, ID ${result.userId}, 金額 ¥${result.amount}, 時間 ${new Date(result.timestamp).toLocaleString()}`;
+                        showMessage(displayMessage);
 
                         // コールバックに送信するデータを作成
                         const callbackData = {
