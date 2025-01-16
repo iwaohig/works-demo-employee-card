@@ -79,33 +79,19 @@
             statusElement.className = isSuccess ? "success-message" : "error-message";
         }
 
-        // データをコールバックURLに送信する関数
-        async function sendToCallback(data) {
-            try {
-                const response = await fetch(callbackUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(data),
-                });
-                if (response.ok) {
-                    showStatus(messages.sendSuccess, true);
-                    console.log("送信成功:", data);
-                } else {
-                    showStatus(messages.sendError, false);
-                    console.error("送信エラー:", await response.text());
-                }
-            } catch (error) {
-                showStatus(messages.sendError, false);
-                console.error("送信中のエラー:", error);
-            }
+        // 表示をクリアする関数
+        function clearDisplay() {
+            document.getElementById("result").textContent = "";
+            document.getElementById("status").textContent = "";
         }
 
         // スキャナーの起動と停止を管理
         document.getElementById("start-scan").addEventListener("click", () => {
             const readerElement = document.getElementById("reader");
             const scanButton = document.getElementById("start-scan");
+
+            // 前回の結果をクリア
+            clearDisplay();
 
             // スキャナーを表示してボタンを非表示
             readerElement.style.display = "block";
