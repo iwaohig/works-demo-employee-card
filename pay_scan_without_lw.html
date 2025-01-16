@@ -52,7 +52,7 @@
             scanning: "スキャン中...",
             expired: "期限切れの QR コードです。",
             invalid: "無効な QR コードです。",
-            scanError: "QR コードのスキャン中にエラーが発生しました。",
+            scanError: "QR コードが検出されません。",
             sendSuccess: "送信が完了しました！",
             sendError: "送信中にエラーが発生しました。",
         };
@@ -113,6 +113,9 @@
 
             const html5QrCode = new Html5Qrcode("reader");
 
+            // エラーメッセージ表示を制限するためのタイムスタンプ
+            let lastErrorTimestamp = 0;
+
             html5QrCode.start(
                 { facingMode: "environment" }, // 背面カメラを使用
                 {
@@ -163,8 +166,12 @@
                     }
                 },
                 (errorMessage) => {
-                    showStatus(messages.scanError, false);
-                    console.error("スキャンエラー:", errorMessage);
+                    // エラーメッセージの頻度を制限
+                    const now = Date.now();
+                    if (now - lastErrorTimestamp > 1000) { // 1秒に1回のみ表示
+                        showStatus(messages.scanError, false);
+                        lastErrorTimestamp = now;
+                    }
                 }
             ).catch(error => {
                 console.error("QRコードスキャナー初期化エラー:", error);
