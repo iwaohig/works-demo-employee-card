@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社内少額決済</title>
+    <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6.2/sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Roboto', Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #payment-form {
+            margin-bottom: 20px;
+        }
+        #payment-form input {
+            padding: 8px;
+            font-size: 1rem;
+            width: 200px;
+            margin-right: 10px;
+        }
+        #payment-form button {
+            padding: 8px 12px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        #qrcode {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>社内少額決済</h1>
+    <p>以下のフォームに支払い金額を入力してください。</p>
+
+    <div id="payment-form">
+        <input type="number" id="amount" placeholder="金額 (¥)" min="1">
+        <button id="generate">支払いQRコード生成</button>
+    </div>
+
+    <div id="qrcode"></div>
+
+    <script>
+        function utf8ToBase64(str) {
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const generateButton = document.getElementById("generate");
+            const amountInput = document.getElementById("amount");
+            const qrcodeContainer = document.getElementById("qrcode");
+
+            let userName = "";
+            let userId = "";
+
+            // 初期化とユーザー情報の取得
+            woff.init({ woffId: "jcS_4cFdWsTr8YtcQ0gEOA" }) // 実際のWOFF IDを設定
+                .then(() => woff.getProfile())
+                .then(profile => {
+                    userName = profile.displayName || "Unknown";
+                    userId = profile.userId || "Unknown";
+                    console.log("ログイン中: ", userName, userId);
+                })
+                .catch(error => {
+                    console.error("ユーザー情報取得エラー:", error);
+                    alert("ユーザー情報の取得に失敗しました。再読み込みしてください。");
+                });
+
+            // 支払いQRコード生成
+            generateButton.addEventListener("click", () => {
+                const amount = parseFloat(amountInput.value);
+                if (!amount || amount <= 0) {
+                    alert("有効な金額を入力してください。");
+                    return;
+                }
+
+                const timestamp = Date.now();
+                const qrPayload = {
+                    userName,
+                    userId,
+                    amount,
+                    timestamp,
+                };
+                const qrData = utf8ToBase64(JSON.stringify(qrPayload));
+
+                // QRコード生成
+                qrcodeContainer.innerHTML = ""; // 既存のQRコードをクリア
+                new QRCode(qrcodeContainer, {
+                    text: qrData,
+                    width: 200,
+                    height: 200,
+                    correctLevel: QRCode.CorrectLevel.H,
+                });
+
+                console.log("生成されたQRコードのデータ:", qrPayload);
+            });
+        });
+    </script>
+</body>
+</html>
