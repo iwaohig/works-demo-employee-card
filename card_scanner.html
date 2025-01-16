@@ -84,6 +84,7 @@
                 try {
                     const profile = await woff.getProfile(); // 読み取った人の情報を取得
                     const scannerName = profile.displayName;
+                    const scannerUserId = profile.userId;
 
                     const scanData = await woff.scanQR(); // QR コードをスキャン
                     const decodedData = base64ToUtf8(scanData.value);
@@ -99,7 +100,10 @@
                         const callbackData = {
                             名前: result.displayName,
                             ID: result.userId,
-                            読み取った人: scannerName,
+                            読み取った人: {
+                                名前: scannerName,
+                                ID: scannerUserId
+                            },
                         };
 
                         // データをコールバックURLに送信
