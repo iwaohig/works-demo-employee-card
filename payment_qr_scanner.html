@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>少額決済読み取り</title>
+    <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6.2/sdk.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <button id="scan">QR コードをスキャン</button>
+    <div id="result"></div>
+    <script>
+        const messages = {
+            scanning: "スキャン中...",
+            scanQr: "QR コードをスキャン",
+            expired: "期限切れの QR コードです。",
+            invalid: "無効な QR コードです。",
+            scanError: "QR コードのスキャン中にエラーが発生しました。",
+            initError: "アプリの初期化に失敗しました。",
+            sendSuccess: "送信が完了しました！",
+            sendError: "送信中にエラーが発生しました。",
+        };
+
+        const callbackUrl = "https://prod-26.japaneast.logic.azure.com:443/workflows/fb0fde2f72454a9eb5075f20e24fd704/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=gHsPyTmiA9BqYW7Qmv7DQMlagpmu5V5glp1lnHj4p8E";
+
+        // Base64デコード用関数
+        function base64ToUtf8(str) {
+            return decodeURIComponent(escape(atob(str)));
+        }
+
+        // 結果を表示する関数
+        function showMessage(message) {
+            document.getElementById("result").textContent = message;
+        }
+
+        // データをコールバックURLに送信する関数
+        async function sendToCallback(data) {
+            try {
+                const response = await fetch(callbackUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(data),
+                });
+                if (response.ok) {
+                    showMessage(messages.sendSuccess);
+                    console.log("送信成功:", data);
+                } else {
+                    showMessage(messages.sendError);
+                    console.error("送信エラー:", await response.text());
+                }
+            } catch (error) {
+                showMessage(messages.sendError);
+                console.error("送信中のエラー:", error);
+            }
+        }
+
+        woff.init({ woffId: "MObvYINz8PkSqNUJEQKYWA" })
+        .then(() => {
+            document.getElementById("scan").addEventListener("click", async () => {
+                const scanButton = document.getElementById("scan");
+                scanButton.disabled = true; // ボタンを無効化
+                scanButton.textContent = messages.scanning;
+
+                try {
+                    const profile = await woff.getProfile(); // 読み取った人の情報を取得
+                    const scannerName = profile.displayName;
+                    const scannerUserId = profile.userId;
+
+                    const scanData = await woff.scanQR(); // QR コードをスキャン
+                    const decodedData = base64ToUtf8(scanData.value);
+                    const result = JSON.parse(decodedData);
+
+                    const currentTimestamp = Date.now();
+                    if (currentTimestamp > result.timestamp + 300000) { // 5分の有効期限チェック
+                        showMessage(messages.expired);
+                    } else {
+                        showMessage(
+                            `スキャン結果: 名前 ${result.userName}, ID ${result.userId}, 金額 ¥${result.amount}, 時間 ${new Date(result.timestamp).toLocaleString()}`
+                        );
+
+                        // コールバックに送信するデータを作成
+                        const callbackData = {
+                            "支払い元の名前": result.userName,
+                            "支払い元のID": result.userId,
+                            "スキャンした人の名前": scannerName,
+                            "スキャンした人のID": scannerUserId,
+                            "支払い金額": result.amount,
+                            "支払い日時": new Date(result.timestamp).toISOString(),
+                        };
+
+                        // データをコールバックURLに送信
+                        await sendToCallback(callbackData);
+                    }
+                } catch (error) {
+                    console.error("エラー:", error);
+                    showMessage(messages.invalid);
+                } finally {
+                    scanButton.disabled = false; // ボタンを再有効化
+                    scanButton.textContent = messages.scanQr;
+                }
+            });
+        })
+        .catch(error => {
+            console.error("WOFF 初期化エラー:", error);
+            showMessage(messages.initError);
+        });
+    </script>
+</body>
+</html>
