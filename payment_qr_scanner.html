@@ -21,6 +21,7 @@
             margin-top: 20px;
             font-size: 18px;
             color: #333;
+            white-space: pre-line; /* 改行を反映させる */
         }
         .success-message {
             color: green;
@@ -112,7 +113,12 @@
                     if (currentTimestamp > result.timestamp + 300000) { // 5分の有効期限チェック
                         showMessage(messages.expired);
                     } else {
-                        const displayMessage = `スキャン結果: 名前 ${result.userName}, ID ${result.userId}, 金額 ¥${result.amount}, 時間 ${new Date(result.timestamp).toLocaleString()}`;
+                        const displayMessage = 
+                            `スキャン結果:\n` +
+                            `名前: ${result.userName}\n` +
+                            `ID: ${result.userId}\n` +
+                            `金額: ¥${result.amount}\n` +
+                            `時間: ${new Date(result.timestamp).toLocaleString()}`;
                         showMessage(displayMessage);
 
                         // コールバックに送信するデータを作成
