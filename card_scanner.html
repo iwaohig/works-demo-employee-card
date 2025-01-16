@@ -35,9 +35,11 @@
             invalid: "無効な QR コードです。",
             scanError: "QR コードのスキャン中にエラーが発生しました。",
             initError: "アプリの初期化に失敗しました。",
+            sendSuccess: "送信が完了しました！",
+            sendError: "送信中にエラーが発生しました。",
         };
 
-        const callbackUrl = "https://prod-25.japaneast.logic.azure.com:443/workflows/4de3155c18d84940b3ff2b77ac5fde81/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PS-ytPN63RQ4zpM2FgDjiSqFgQ9q5dKcWn_opuce9sY"; // 実際のコールバックURLに置き換えてください
+        const callbackUrl = "https://prod-25.japaneast.logic.azure.com:443/workflows/4de3155c18d84940b3ff2b77ac5fde81/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=PS-ytPN63RQ4zpM2FgDjiSqFgQ9q5dKcWn_opuce9sY";
 
         // Base64デコード用関数
         function base64ToUtf8(str) {
@@ -60,16 +62,19 @@
                     body: JSON.stringify(data),
                 });
                 if (response.ok) {
+                    showMessage(messages.sendSuccess);
                     console.log("送信成功:", data);
                 } else {
+                    showMessage(messages.sendError);
                     console.error("送信エラー:", await response.text());
                 }
             } catch (error) {
+                showMessage(messages.sendError);
                 console.error("送信中のエラー:", error);
             }
         }
 
-        woff.init({ woffId: "xPHLCUnzH7Yl5kRx9B4ncw" }) // 実際のWOFF IDに置き換えてください
+        woff.init({ woffId: "xPHLCUnzH7Yl5kRx9B4ncw" })
         .then(() => {
             document.getElementById("scan").addEventListener("click", async () => {
                 const scanButton = document.getElementById("scan");
@@ -98,7 +103,7 @@
                         };
 
                         // データをコールバックURLに送信
-                        sendToCallback(callbackData);
+                        await sendToCallback(callbackData);
                     }
                 } catch (error) {
                     console.error("エラー:", error);
