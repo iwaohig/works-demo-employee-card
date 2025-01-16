@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社員証読み取り</title>
+    <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6.2/sdk.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <button id="scan">QR コードをスキャン</button>
+    <div id="result"></div>
+    <script>
+        const messages = {
+            scanning: "スキャン中...",
+            scanQr: "QR コードをスキャン",
+            expired: "期限切れの QR コードです。",
+            invalid: "無効な QR コードです。",
+            scanError: "QR コードのスキャン中にエラーが発生しました。",
+            initError: "アプリの初期化に失敗しました。",
+        };
+
+        // Base64デコード用関数
+        function base64ToUtf8(str) {
+            return decodeURIComponent(escape(atob(str)));
+        }
+
+        // 結果を表示する関数
+        function showMessage(message) {
+            document.getElementById("result").textContent = message;
+        }
+
+        woff.init({ woffId: "xPHLCUnzH7Yl5kRx9B4ncw" }) // 実際のWOFF IDに置き換えてください
+        .then(() => {
+            document.getElementById("scan").addEventListener("click", () => {
+                const scanButton = document.getElementById("scan");
+                scanButton.disabled = true; // ボタンを無効化
+                scanButton.textContent = messages.scanning;
+
+                woff.scanQR()
+                .then(data => {
+                    try {
+                        // QRコードデータをデコードしてパース
+                        const decodedData = base64ToUtf8(data.value);
+                        const result = JSON.parse(decodedData);
+
+                        // 有効期限のチェック
+                        const currentTimestamp = Date.now();
+                        if (currentTimestamp > result.expiry) {
+                            showMessage(messages.expired);
+                        } else {
+                            showMessage(`名前: ${result.displayName}, ID: ${result.userId}`);
+                        }
+                    } catch (error) {
+                        console.error("デコードまたはパース中のエラー:", error);
+                        showMessage(messages.invalid);
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    showMessage(messages.scanError);
+                })
+                .finally(() => {
+                    scanButton.disabled = false; // ボタンを再有効化
+                    scanButton.textContent = messages.scanQr;
+                });
+            });
+        })
+        .catch(error => {
+            console.error("WOFF 初期化エラー:", error);
+            showMessage(messages.initError);
+        });
+    </script>
+</body>
+</html>
