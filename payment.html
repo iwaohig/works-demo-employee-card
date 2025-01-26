@@ -6,11 +6,10 @@
     <title>社内少額決済</title>
     <script charset="utf-8" src="https://static.worksmobile.net/static/wm/woff/edge/3.6.2/sdk.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!--VConsole-->
+    <!-- VConsole -->
     <script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
-    // VConsole will be exported to `window.VConsole` by default.
-    var vConsole = new window.VConsole();
+        var vConsole = new window.VConsole();
     </script>
     <style>
         body {
@@ -59,10 +58,32 @@
     <div id="countdown"></div>
 
     <script>
+        // Base64エンコード（エラー処理付き）
         function utf8ToBase64(str) {
-            return btoa(unescape(encodeURIComponent(str)));
+            try {
+                return btoa(unescape(encodeURIComponent(str)));
+            } catch (error) {
+                console.error("エンコードエラー:", error);
+                return "";
+            }
         }
 
+        // Base64デコード（エラー処理付き）
+        function base64ToUtf8(str) {
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (error) {
+                console.error("デコードエラー:", error);
+                return null;
+            }
+        }
+
+        // ユーザー名の正規化（制御文字と特殊文字を削除）
+        function normalizeUserName(name) {
+            return name.normalize('NFKC').replace(/[^\w\sぁ-んァ-ヶ一-龥０-９ー・]/g, '');
+        }
+
+        // カウントダウンの開始
         function startCountdown(expiryTimestamp) {
             const countdownElement = document.getElementById("countdown");
             const interval = setInterval(() => {
@@ -94,7 +115,7 @@
             woff.init({ woffId: "jcS_4cFdWsTr8YtcQ0gEOA" }) // 実際のWOFF IDを設定
                 .then(() => woff.getProfile())
                 .then(profile => {
-                    userName = profile.displayName || "Unknown";
+                    userName = normalizeUserName(profile.displayName || "Unknown");
                     userId = profile.userId || "Unknown";
                     console.log("ログイン中: ", userName, userId);
                 })
@@ -120,7 +141,14 @@
                     timestamp,
                     expiry: expiryTimestamp,
                 };
+
+                // JSONデータをエンコード
                 const qrData = utf8ToBase64(JSON.stringify(qrPayload));
+
+                if (!qrData) {
+                    alert("QRコードの生成に失敗しました。");
+                    return;
+                }
 
                 // QRコード生成
                 qrcodeContainer.innerHTML = ""; // 既存のQRコードをクリア
@@ -128,7 +156,7 @@
                     text: qrData,
                     width: 200,
                     height: 200,
-                    correctLevel: QRCode.CorrectLevel.H,
+                    correctLevel: QRCode.CorrectLevel.Q, // エラー訂正レベルを上げる
                 });
 
                 console.log("生成されたQRコードのデータ:", qrPayload);
